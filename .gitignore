@@ -102,3 +102,6 @@ ENV/
 
 # env
 .env
+client_secret.json
+credentials.json
+quickstart.py
