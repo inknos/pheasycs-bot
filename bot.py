@@ -12,7 +12,7 @@ Basic Echobot example, repeats messages.
 Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
-
+import os
 import environ
 root = environ.Path(__file__)
 env = environ.Env(DEBUG=(bool, False),) # set default values and casting
@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 def start(bot, update):
-    keyboard = [[InlineKeyboardButton("Create Event", callback_data='Create Event'),
-                 InlineKeyboardButton("Ask Calendar", callback_data='Ask Calendar')],
+    keyboard = [[InlineKeyboardButton("Create Event", callback_data='create_event_menu'),
+                 InlineKeyboardButton("Ask Calendar", callback_data='show_calendar_menu')],
 
                 [InlineKeyboardButton("Nothing", callback_data='Nothing')]]
 
@@ -37,12 +37,20 @@ def start(bot, update):
 
     update.message.reply_text('Main Menu', reply_markup=reply_markup)
 
-def main_menu(bot, update):
+def handler(bot, update):
     query = update.callback_query
+    keyboard = [[InlineKeyboardButton("", callback_data='Create Event'),
+                 InlineKeyboardButton("Ask Calendar", callback_data='Ask Calendar')],
 
-    bot.edit_message_text(text="{}".format(query.data),
-                          chat_id=query.message.chat_id,
-                          message_id=query.message.message_id)
+                [InlineKeyboardButton("Nothing", callback_data='Nothing')]]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    #bot.send_message(query.message.chat_id,format(query.data), reply_markup=reply_markup)
+    bot.answer_callback_query(update.callback_query.id, callback_query=format(query.data) )
+    #bot.edit_message_text(text="{}".format(query.data),
+    #                      chat_id=query.message.chat_id,
+    #                      message_id=query.message.message_id)
     
 def create_event_menu(bot, update):
     keyboard = [[InlineKeyboardButton("", callback_data='Create Event'),
@@ -66,7 +74,11 @@ def show_calendar_menu(bot, update):
     update.message.reply_text('Show Calendar', reply_markup=reply_markup)
 
 def help(bot, update):
-    update.message.reply_text("Use /start to test this bot.")
+    update.message.reply_text("Hi! this is the version 0.0 of pheasycs-bot by inknos\n"+
+                              "Personal page: inknos.github.io\n"+
+                              "Bot page: github.com/inknos/pheasycs-bot\n\n"+
+                              "Use /start to test this bot.\n"+
+                              "For more hel type /help")
 
 
 def error(bot, update, error):
@@ -76,10 +88,18 @@ def error(bot, update, error):
 
 def main():
     # Create the Updater and pass it your bot's token.
+    PORT = int(os.environ.get('PORT', '8443'))
     updater = Updater(env("TOKEN"))
+    updater.start_webhook(listen="0.0.0.0",
+                          port=PORT,
+                          url_path=env('TOKEN'))
+    updater.bot.set_webhook("https://pheasycs-bot.herokuapp.com/" + env('TOKEN'))
 
     updater.dispatcher.add_handler(CommandHandler('start', start))
-    updater.dispatcher.add_handler(CallbackQueryHandler(main_menu))
+    updater.dispatcher.add_handler(CommandHandler('createevent', create_event_menu))
+    updater.dispatcher.add_handler(CommandHandler('showcalendar', show_calendar_menu))
+    
+    updater.dispatcher.add_handler(CallbackQueryHandler(handler))
     updater.dispatcher.add_handler(CommandHandler('help', help))
     updater.dispatcher.add_error_handler(error)
 
