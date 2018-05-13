@@ -1,0 +1,4 @@
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+def start_menu():
+    leyboard = [[InlineKeyboardButton("Create Event", callback_data="create_event")]]
